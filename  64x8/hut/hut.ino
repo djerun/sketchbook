@@ -4,6 +4,10 @@
 
 #define FIX_MATH_NO_OVERFLOW
 
+#include <sstream>
+
+#include <ESP8266WiFi.h>
+
 #include "FastLED.h"
 
 #define LED_TYPE WS2812B
@@ -14,6 +18,12 @@
 #define NUM_LEDS (((NUM_ROWS * NUM_COLS)))
 
 #define NUM_SNAKES 32
+
+#define WIFI_SSID (("pixelhut"))
+#define WIFI_PASSWORD (("pixelhut"))
+#define WIFI_PORT 1337
+
+boolean WIFI_ACTIVE = false;
 
 CRGB led[NUM_LEDS];
 
@@ -38,6 +48,9 @@ float speedFactor() {
   return ((float)speed) / ((float)DEFAULT_SPEED);
 }
 
+void enableWIFI(void);
+void disableWIFI(void);
+
 void snakes(void);
 void snakesInit(void);
 void gameOfLife(void);
@@ -60,12 +73,14 @@ void fire(void);
 void fireInit(void);
 void cyber(void);
 void cyberInit(void);
+void pixelflut(void);
+void pixelflutInit(void);
 //void audioSpectrum(void);
 //void audioSpectrumInit(void);
 //void midiPlayer();
 //void midiPlaterInit();
 
-#define NUM_MODES 13
+#define NUM_MODES 14
 int mode = 11;
 
 void (*modes[])(void) = {
@@ -81,7 +96,8 @@ void (*modes[])(void) = {
   &rainbowWalk, // 9
   &rainbowSwap, // 10
   &fire, // 11
-  &cyber // 12
+  &cyber, // 12
+  &pixelflut // 13
 };
 
 void (*modeInits[])(void) = {
@@ -97,7 +113,8 @@ void (*modeInits[])(void) = {
   &rainbowWalkInit, // 9
   &rainbowSwapInit, // 10
   &fireInit, // 11
-  &cyberInit // 12
+  &cyberInit, // 12
+  &pixelflutInit // 13
 };
 
 CRGB primaryColors[] = {
@@ -129,12 +146,14 @@ void decreaseBrightness() {
 }
 
 void nextMode() {
+  //disableWIFI();
   mode = (mode+1)%NUM_MODES;
   Serial.println(mode, HEX);
   (*modeInits[mode])();
 }
 
 void previousMode() {
+  //disableWIFI();
   mode = (mode+NUM_MODES-1)%NUM_MODES;
   Serial.println(mode, HEX);
   (*modeInits[mode])();
@@ -286,13 +305,15 @@ void randomizeMode() {
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("##### EPIC HAT IS EPIC #####");
   
   FastLED.addLeds<LED_TYPE,  2, COLOR_ORDER>(led, 0, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
 
-  randomSeed(rand());
+  enableWIFI();
+
+  randomSeed(millis());
   randomizeMode();
 }
 
@@ -447,6 +468,21 @@ float easeInOutExpo(float t) {
   } else {
     t--;
     return 0.5 * ( -pow( 2, -10 * t) + 2 );
+  }
+}
+
+void enableWIFI() {
+  if (!WIFI_ACTIVE) {
+    WiFi.softAP(WIFI_SSID, WIFI_PASSWORD);
+    Serial.println(WiFi.softAPIP());
+    WIFI_ACTIVE = true;
+  }
+}
+
+void disableWIFI() {
+  if (WIFI_ACTIVE) {
+    WiFi.softAPdisconnect();
+    WIFI_ACTIVE = false;
   }
 }
 
@@ -1058,6 +1094,68 @@ void cyber() {
   }
   FastLED.show();
   delay(random(50)+25);
+}
+
+//////////////////////// PIXELFLUT ////////////////////////
+
+WiFiServer server(1337);
+
+void handleCommand(String command, WiFiClient client) {
+  if (command.length() > 0) {
+    if (command.equals("HELP")) {
+      client.write("Minimalistic Implementation of Pixelflut\nSupports a single command per connection, does not support color output, does not support alpha channel.");
+      return;
+    }
+    if (command.equals("SIZE")) {
+      client.write("SIZE 64 8\n");
+      return;
+    }
+    int x, y, r, g, b;
+    int count = sscanf(command.c_str(), "PX %u %u %2x%2x%2x", &x, &y, &r, &g, &b);
+    Serial.println(count);
+    Serial.println(x);
+    Serial.println(y);
+    Serial.println(r);
+    Serial.println(g);
+    Serial.println(b);
+    if ((count == 5)
+    && (x >= 0)
+    && (x < NUM_COLS)
+    && (y >= 0)
+    && (y < NUM_ROWS)
+    && (r >= 0)
+    && (r < 256)
+    && (g >= 0)
+    && (g < 256)
+    && (b >= 0)
+    && (b < 256)
+    ) {
+      led[led_index(y, x)] = CRGB(r, g, b);
+    }
+  }
+}
+
+void pixelflutInit() {
+  //enableWIFI();
+  server.begin();
+  Serial.println("Server started");
+}
+
+void pixelflut() {
+  WiFiClient client = server.available();
+  if (!client) {
+    return;
+  }
+
+  Serial.println("new client");
+  while (!client.available()) delay(1);
+
+  String line = client.readStringUntil('\n');
+  Serial.println(line);
+  handleCommand(line, client);
+  client.flush();
+  client.stop();
+  FastLED.show();
 }
 
 //////////////////////// AUDIO SPECTRUM VISUALIZER ////////////////////////
