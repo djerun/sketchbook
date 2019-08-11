@@ -1,6 +1,6 @@
-const PROGMEM unsigned char GLYPH_INDEX[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=!@#$%^&*()_+[]{};'\\:\"|,./<>?";
+// "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=!@#$%^&*()_+[]{};'\\:\"|,./<>?"
 
-const PROGMEM char FONT[][7][6] = {{
+const char FONT[][7][6] = {{
 		"#####",
 		"#   #",
 		"#  ##",
