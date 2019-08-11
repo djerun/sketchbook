@@ -1,6 +1,6 @@
-const PROGMEM unsigned char GLYPH_INDEX[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=!@#$%^&*()_+[]{};'\\:\"|,./<>?"
+const PROGMEM unsigned char GLYPH_INDEX[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=!@#$%^&*()_+[]{};'\\:\"|,./<>?";
 
-const PROGMEM char FONT[][7][5] = {{
+const PROGMEM char FONT[][7][6] = {{
 		"#####",
 		"#   #",
 		"#  ##",
@@ -51,7 +51,7 @@ const PROGMEM char FONT[][7][5] = {{
 	}, {
 		" ### ",
 		"#   #",
-		"#    ".
+		"#    ",
 		"#### ",
 		"#   #",
 		"#   #",
@@ -528,7 +528,7 @@ const PROGMEM char FONT[][7][5] = {{
 		"  #  ",
 		"     ",
 		"  #  "
-	}, {
+	}
 };
 
 // "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=!@#$%^&*()_+[]{};'\\:\"|,./<>?"
