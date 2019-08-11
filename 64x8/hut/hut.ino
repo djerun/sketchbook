@@ -4,11 +4,11 @@
 
 #define FIX_MATH_NO_OVERFLOW
 
-#include <sstream>
-
 #include <ESP8266WiFi.h>
 
 #include "FastLED.h"
+
+#include "font.h"
 
 #define LED_TYPE WS2812B
 #define COLOR_ORDER GRB
@@ -146,14 +146,12 @@ void decreaseBrightness() {
 }
 
 void nextMode() {
-  //disableWIFI();
   mode = (mode+1)%NUM_MODES;
   Serial.println(mode, HEX);
   (*modeInits[mode])();
 }
 
 void previousMode() {
-  //disableWIFI();
   mode = (mode+NUM_MODES-1)%NUM_MODES;
   Serial.println(mode, HEX);
   (*modeInits[mode])();
@@ -483,6 +481,117 @@ void disableWIFI() {
   if (WIFI_ACTIVE) {
     WiFi.softAPdisconnect();
     WIFI_ACTIVE = false;
+  }
+}
+
+int glyphPos(char c) {
+  // "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-=!@#$%^&*()_+[]{};'\\:\"|,./<>?"
+  switch (c) {
+    case '0': return 0;
+    case '1': return 1;
+    case '2': return 2;
+    case '3': return 3;
+    case '4': return 4;
+    case '5': return 5;
+    case '6': return 6;
+    case '7': return 7;
+    case '8': return 8;
+    case '9': return 9;
+    case 'A': return 10;
+    case 'B': return 11;
+    case 'C': return 12;
+    case 'D': return 13;
+    case 'E': return 14;
+    case 'F': return 15;
+    case 'G': return 16;
+    case 'H': return 17;
+    case 'I': return 18;
+    case 'J': return 19;
+    case 'K': return 20;
+    case 'L': return 21;
+    case 'M': return 22;
+    case 'N': return 23;
+    case 'O': return 24;
+    case 'P': return 25;
+    case 'Q': return 26;
+    case 'R': return 27;
+    case 'S': return 28;
+    case 'T': return 29;
+    case 'U': return 30;
+    case 'V': return 31;
+    case 'W': return 32;
+    case 'X': return 33;
+    case 'Y': return 34;
+    case 'Z': return 35;
+    case '-': return 36;
+    case '=': return 37;
+    case '!': return 38;
+    case '@': return 39;
+    case '#': return 40;
+    case '$': return 41;
+    case '%': return 42;
+    case '^': return 43;
+    case '&': return 44;
+    case '*': return 45;
+    case '(': return 46;
+    case ')': return 47;
+    case '_': return 48;
+    case '+': return 49;
+    case '[': return 50;
+    case ']': return 51;
+    case '{': return 52;
+    case '}': return 53;
+    case ';': return 54;
+    case '\'': return 55;
+    case '\\': return 56;
+    case ':': return 57;
+    case '"': return 58;
+    case '|': return 59;
+    case ',': return 60;
+    case '.': return 61;
+    case '/': return 62;
+    case '<': return 63;
+    case '>': return 64;
+    case '?': return 65;
+    default: return -1;
+  }
+}
+
+void displayText(String s) {
+  Serial.println("displayText");
+  unsigned int offset = 0;
+  for (int i = 0; i < s.length(); ++i) {
+    Serial.print("offset: ");
+    Serial.println(offset);
+    Serial.print("i: ");
+    Serial.println(i);
+    char glyph = s.charAt(i);
+    Serial.print("glyph: ");
+    Serial.println(glyph);
+    int gp = glyphPos(glyph);
+    Serial.print("glyphPos: ");
+    Serial.println(gp);
+    if (gp >= 0) {
+      for (unsigned int row = 0; row < 7; ++row) {
+        Serial.print("row: ");
+        Serial.println(row);
+        for (unsigned int col = 0; col < 5; ++col) {
+          Serial.print("col: ");
+          Serial.println(col);
+          char v = FONT[gp][row][col];
+          Serial.print("v: ");
+          Serial.println(v);
+          if ('#' == v) {
+            Serial.println(true);
+            led[led_index(NUM_ROWS-1-row, col+offset)] = primaryColor;
+          } else {
+            Serial.println(false);
+            led[led_index(NUM_ROWS-1-row, col+offset)] = CRGB::Black;
+          }
+        }
+      }
+    }
+    offset += 6;
   }
 }
 
@@ -1136,9 +1245,12 @@ void handleCommand(String command, WiFiClient client) {
 }
 
 void pixelflutInit() {
-  //enableWIFI();
+  Serial.println("Starting Server");
   server.begin();
-  Serial.println("Server started");
+  Serial.println("Server up");
+  clearScreen();
+  displayText(String("FOOBAR"));
+  FastLED.show();
 }
 
 void pixelflut() {
