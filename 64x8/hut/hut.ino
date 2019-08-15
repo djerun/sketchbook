@@ -236,6 +236,78 @@ void handleSerial() {
   }
 }
 
+WiFiServer CONTROL_SERVER(7331);
+
+WiFiClient CONTROL_CLIENT;
+
+void handleCommandClient() {
+  if (CONTROL_CLIENT.connected()) {
+    if (CONTROL_CLIENT.available()) {
+      Serial.println("client available");
+      String line = CONTROL_CLIENT.readStringUntil('\n');
+      Serial.print("got line: \"");
+      Serial.print(line);
+      Serial.println("\"");
+      for (unsigned int i = 0; i < line.length(); ++i) {
+        byte cmd = line.charAt(i);
+        Serial.print(cmd, HEX);
+        switch (cmd) {
+        case '1':
+          increaseBrightness();
+          break;
+        case '2':
+          decreaseBrightness();
+          break;
+        case '3':
+          nextMode();
+          break;
+        case '4':
+          previousMode();
+          break;
+        case '5':
+          nextColor();
+          break;
+        case '6':
+          previousColor();
+          break;
+        case '7':
+          speedUp();
+          break;
+        case '8':
+          speedDown();
+          break;
+        case '9':
+          specialPlus();
+          break;
+        case '0':
+          specialMinus();
+          break;
+        case 'r':
+          randomizeMode();
+          break;
+        default:
+          break;
+        }
+      }
+      CONTROL_CLIENT.flush();
+    }
+  } else {
+    Serial.println("client disconnected");
+    CONTROL_CLIENT.stop();
+  }
+}
+
+void handleCommandServer() {
+  if (CONTROL_CLIENT) {
+    handleCommandClient();
+  } else {
+    CONTROL_CLIENT = CONTROL_SERVER.available();
+    if (CONTROL_CLIENT) {
+      handleCommandClient();
+    }
+  }
+}
+
 /*
 #define NUM_BUTTONS 8
  
@@ -310,6 +382,7 @@ void setup() {
   FastLED.setBrightness(BRIGHTNESS);
 
   enableWIFI();
+  CONTROL_SERVER.begin();
 
   randomSeed(millis());
   randomizeMode();
@@ -317,6 +390,7 @@ void setup() {
 
 void loop() {
   handleSerial();
+  handleCommandServer();
   (*modes[mode])();
 }
 
@@ -566,26 +640,14 @@ void displayText(String s) {
     Serial.print("i: ");
     Serial.println(i);
     char glyph = s.charAt(i);
-    Serial.print("glyph: ");
-    Serial.println(glyph);
     int gp = glyphPos(glyph);
-    Serial.print("glyphPos: ");
-    Serial.println(gp);
     if (gp >= 0) {
       for (unsigned int row = 0; row < 7; ++row) {
-        Serial.print("row: ");
-        Serial.println(row);
         for (unsigned int col = 0; col < 5; ++col) {
-          Serial.print("col: ");
-          Serial.println(col);
           char v = FONT[gp][row][col];
-          Serial.print("v: ");
-          Serial.println(v);
           if ('#' == v) {
-            Serial.println(true);
             led[led_index(NUM_ROWS-1-row, col+offset)] = primaryColor;
           } else {
-            Serial.println(false);
             led[led_index(NUM_ROWS-1-row, col+offset)] = CRGB::Black;
           }
         }
@@ -1207,7 +1269,7 @@ void cyber() {
 
 //////////////////////// PIXELFLUT ////////////////////////
 
-WiFiServer server(1337);
+WiFiServer PIXELFLUT_SERVER(1337);
 
 void handleCommand(String command, WiFiClient client) {
   if (command.length() > 0) {
@@ -1246,7 +1308,7 @@ void handleCommand(String command, WiFiClient client) {
 
 void pixelflutInit() {
   Serial.println("Starting Server");
-  server.begin();
+  PIXELFLUT_SERVER.begin();
   Serial.println("Server up");
   clearScreen();
   displayText(String("FOOBAR"));
@@ -1254,7 +1316,7 @@ void pixelflutInit() {
 }
 
 void pixelflut() {
-  WiFiClient client = server.available();
+  WiFiClient client = PIXELFLUT_SERVER.available();
   if (!client) {
     return;
   }
