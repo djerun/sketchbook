@@ -1039,31 +1039,25 @@ void rainbowSwipe() {
 
 //////////////////////// SPINNER ////////////////////////
 
+unsigned int SPINNER_COUNTER = 0;
+
 void spinnerInit() {
   FastLED.setBrightness(BRIGHTNESS);
+  SPINNER_COUNTER = 0;
   clearScreen();
 }
 
 void spinner() {
-#define SPREAD 0.1
+  dimScreenByAmount(0x1f);
 
-  float tim = time() * 0.7;
-  float tim5 = tim + 0.5;
-
-  for (int i = 0; i < NUM_COLS; ++i) {
-    float y = ((float)i)/((float)NUM_COLS);
-    float t0 = min(1.0, abs(y       - frac(tim)) / SPREAD);
-    float t1 = min(1.0, abs(y + 1.0 - frac(tim)) / SPREAD);
-    float t2 = min(1.0, abs(y - 1.0 - frac(tim)) / SPREAD);
-    float t3 = min(1.0, abs(y       - frac(tim5)) / SPREAD);
-    float t4 = min(1.0, abs(y + 1.0 - frac(tim5)) / SPREAD);
-    float t5 = min(1.0, abs(y - 1.0 - frac(tim5)) / SPREAD);
-    float t = min(min(min(t0, t1), min(t2, t3)), min(t4, t5));
-    for (int j = 0; j < NUM_ROWS; ++j) {
-      led[led_index(j, i)] = primaryColor;
-      led[led_index(j, i)].fadeLightBy(((char)(t*255.0)));
-    }
+  for (int j = 0; j < NUM_ROWS; ++j) {
+    led[led_index(j, SPINNER_COUNTER)] = primaryColor;
+    led[led_index(j, (SPINNER_COUNTER+NUM_COLS/2) % NUM_COLS)] = primaryColor;
   }
+
+  SPINNER_COUNTER = (SPINNER_COUNTER+1) % NUM_COLS;
+
+  delay(10);
 
   FastLED.show();
 }
