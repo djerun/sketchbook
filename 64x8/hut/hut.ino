@@ -398,9 +398,9 @@ void loop() {
 
 unsigned int led_index(int row, int col) {
   if ((col % 2) == 0) {
-    return col * NUM_ROWS + NUM_ROWS - 1 - row;
+    return (col % NUM_COLS) * NUM_ROWS + NUM_ROWS - 1 - (row % NUM_ROWS);
   } else {
-    return col * NUM_ROWS + row;
+    return (col % NUM_COLS) * NUM_ROWS + (row % NUM_ROWS);
   }
 }
 
