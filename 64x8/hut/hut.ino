@@ -17,7 +17,7 @@
 #define NUM_COLS 64
 #define NUM_LEDS (((NUM_ROWS * NUM_COLS)))
 
-#define NUM_SNAKES 32
+#define NUM_SNAKES 48
 
 #define WIFI_SSID (("pixelhut"))
 #define WIFI_PASSWORD (("pixelhut"))
@@ -32,10 +32,8 @@ byte BRIGHTNESS = 0xf;
 typedef union t_FieldData {
   boolean gameOfLifeData[NUM_LEDS*2]; // alive flags for all cells, frontbuffer+backbuffer
   unsigned char fireData[NUM_LEDS]; // temperature for all cells, frontbuffer+backbuffer
-  //  unsigned char audioSpectrumData[NUM_COLS]; //averaged amplitude per frequency band
   unsigned char snakeData[NUM_SNAKES*6];
   unsigned char cyberData[1];
-  // midiPlayerData
 } 
 FieldData;
 
@@ -75,12 +73,10 @@ void cyber(void);
 void cyberInit(void);
 void pixelflut(void);
 void pixelflutInit(void);
-//void audioSpectrum(void);
-//void audioSpectrumInit(void);
-//void midiPlayer();
-//void midiPlaterInit();
+void ipsum(void);
+void ipsumInit(void);
 
-#define NUM_MODES 14
+#define NUM_MODES 15
 int mode = 11;
 
 void (*modes[])(void) = {
@@ -97,7 +93,8 @@ void (*modes[])(void) = {
   &rainbowSwap, // 10
   &fire, // 11
   &cyber, // 12
-  &pixelflut // 13
+  &pixelflut, // 13
+  &ipsum // 14
 };
 
 void (*modeInits[])(void) = {
@@ -114,7 +111,8 @@ void (*modeInits[])(void) = {
   &rainbowSwapInit, // 10
   &fireInit, // 11
   &cyberInit, // 12
-  &pixelflutInit // 13
+  &pixelflutInit, // 13
+  &ipsumInit // 14
 };
 
 CRGB primaryColors[] = {
@@ -382,9 +380,12 @@ void setup() {
   FastLED.setBrightness(BRIGHTNESS);
 
   enableWIFI();
+  Serial.print("Scanned Networks: ");
+  int n = WiFi.scanNetworks();
+  Serial.println(n);
   CONTROL_SERVER.begin();
 
-  randomSeed(millis());
+  randomSeed(millis()+n*millis());
   randomizeMode();
 }
 
@@ -571,32 +572,32 @@ int glyphPos(char c) {
     case '7': return 7;
     case '8': return 8;
     case '9': return 9;
-    case 'A': return 10;
-    case 'B': return 11;
-    case 'C': return 12;
-    case 'D': return 13;
-    case 'E': return 14;
-    case 'F': return 15;
-    case 'G': return 16;
-    case 'H': return 17;
-    case 'I': return 18;
-    case 'J': return 19;
-    case 'K': return 20;
-    case 'L': return 21;
-    case 'M': return 22;
-    case 'N': return 23;
-    case 'O': return 24;
-    case 'P': return 25;
-    case 'Q': return 26;
-    case 'R': return 27;
-    case 'S': return 28;
-    case 'T': return 29;
-    case 'U': return 30;
-    case 'V': return 31;
-    case 'W': return 32;
-    case 'X': return 33;
-    case 'Y': return 34;
-    case 'Z': return 35;
+    case 'A': case 'a': return 10;
+    case 'B': case 'b': return 11;
+    case 'C': case 'c': return 12;
+    case 'D': case 'd': return 13;
+    case 'E': case 'e': return 14;
+    case 'F': case 'f': return 15;
+    case 'G': case 'g': return 16;
+    case 'H': case 'h': return 17;
+    case 'I': case 'i': return 18;
+    case 'J': case 'j': return 19;
+    case 'K': case 'k': return 20;
+    case 'L': case 'l': return 21;
+    case 'M': case 'm': return 22;
+    case 'N': case 'n': return 23;
+    case 'O': case 'o': return 24;
+    case 'P': case 'p': return 25;
+    case 'Q': case 'q': return 26;
+    case 'R': case 'r': return 27;
+    case 'S': case 's': return 28;
+    case 'T': case 't': return 29;
+    case 'U': case 'u': return 30;
+    case 'V': case 'v': return 31;
+    case 'W': case 'w': return 32;
+    case 'X': case 'x': return 33;
+    case 'Y': case 'y': return 34;
+    case 'Z': case 'z': return 35;
     case '-': return 36;
     case '=': return 37;
     case '!': return 38;
@@ -627,33 +628,86 @@ int glyphPos(char c) {
     case '<': return 63;
     case '>': return 64;
     case '?': return 65;
-    default: return -1;
+    default: return 66;
   }
 }
 
+int displayTextPixelLength(String s) {
+  int l = s.length();
+
+  if (l == 0) return 0;
+
+  return (l * 5) + l;
+}
+
+int displayTextMaxOffset(String s) {
+  unsigned int pixelLength = displayTextPixelLength(s);
+
+  if (pixelLength == 0) return 0;
+
+  return pixelLength;
+}
+
 void displayText(String s) {
+  clearScreen();
   Serial.println("displayText");
   unsigned int offset = 0;
+
   for (int i = 0; i < s.length(); ++i) {
-    Serial.print("offset: ");
-    Serial.println(offset);
-    Serial.print("i: ");
-    Serial.println(i);
     char glyph = s.charAt(i);
     int gp = glyphPos(glyph);
+
     if (gp >= 0) {
       for (unsigned int row = 0; row < 7; ++row) {
         for (unsigned int col = 0; col < 5; ++col) {
           char v = FONT[gp][row][col];
+
           if ('#' == v) {
             led[led_index(NUM_ROWS-1-row, col+offset)] = primaryColor;
           } else {
             led[led_index(NUM_ROWS-1-row, col+offset)] = CRGB::Black;
           }
         }
+
+        led[led_index(NUM_ROWS-1-row, offset+5)] = CRGB::Black;
       }
     }
+
     offset += 6;
+  }
+}
+
+void displayTextAdvanced(String s, int offset) {
+  for (int i = 0; i < NUM_LEDS; ++i) {
+    led[i] = CRGB::Black;
+  }
+
+  int maxOffset = displayTextMaxOffset(s);
+  int textShift = maxOffset - offset - 1;
+
+  for (int i = 0; i < s.length(); ++i) {
+    int glyphStart = i*6;
+    char glyph = s.charAt(i);
+    int gp = glyphPos(glyph);
+
+    for (unsigned int row = 0; row < 7; ++row) {
+      for (unsigned int col = 0; col < 5; ++col) {
+        char v = FONT[gp][row][col];
+        int r = NUM_ROWS-1-row;
+        int c = glyphStart+col-offset;
+
+        if (r >= 0 && r < NUM_ROWS && c >= 0 && c < NUM_COLS) {
+          if ('#' == v) {
+            led[led_index(r, c)] = primaryColor;
+          } else {
+            led[led_index(r, c)] = CRGB::Black;
+          }
+        }
+      }
+    }
+  }
+  for (unsigned int row = 0; row < NUM_ROWS; ++row) {
+    led[led_index(row, NUM_COLS-1)] = primaryColor;
   }
 }
 
@@ -810,7 +864,7 @@ void gameOfLife() {
   }
   firstIsFrontbuffer = !firstIsFrontbuffer;
   FastLED.show();
-  delay(1000);
+  delay(500);
   if (changeCount < GOL_LOW_CHANGE_COUNT) {
     ++cycleCount;
     if (cycleCount >= GOL_RESET_CYCLE_COUNT) {
@@ -1300,34 +1354,50 @@ void handleCommand(String command, WiFiClient client) {
   }
 }
 
+int ipOffset = -NUM_COLS;
+
 void pixelflutInit() {
+  ipOffset = -NUM_COLS;
   Serial.println("Starting Server");
   PIXELFLUT_SERVER.begin();
   Serial.println("Server up");
   clearScreen();
-  displayText(String("FOOBAR"));
   FastLED.show();
 }
+
 
 void pixelflut() {
   WiFiClient client = PIXELFLUT_SERVER.available();
-  if (!client) {
-    return;
+  if (client) {
+    Serial.println("new client");
+    while (!client.available()) delay(1);
+
+    String line = client.readStringUntil('\n');
+    Serial.println(line);
+    handleCommand(line, client);
+    client.flush();
+//    client.stop();
+    FastLED.show();
   }
-
-  Serial.println("new client");
-  while (!client.available()) delay(1);
-
-  String line = client.readStringUntil('\n');
-  Serial.println(line);
-  handleCommand(line, client);
-  client.flush();
-  client.stop();
-  FastLED.show();
 }
 
-//////////////////////// AUDIO SPECTRUM VISUALIZER ////////////////////////
+//////////////////////// IPSUM ////////////////////////
 
+int ipsumOffset = -NUM_COLS;
 
+void ipsumInit() {
+  ipsumOffset = -NUM_COLS;
+  clearScreen();
+}
 
-//////////////////////// MIDI PLAYER  ////////////////////////
+void ipsum() {
+  const String IPSUM("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
+
+  if (ipsumOffset >= displayTextMaxOffset(IPSUM)) ipsumOffset = -NUM_COLS;
+
+  displayTextAdvanced(IPSUM, ipsumOffset);
+
+  FastLED.show();
+  ++ipsumOffset;
+  delay(25);
+}
