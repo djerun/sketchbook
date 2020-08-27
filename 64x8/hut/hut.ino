@@ -1368,7 +1368,7 @@ void pixelflutInit() {
 
 void pixelflut() {
   WiFiClient client = PIXELFLUT_SERVER.available();
-  if (client) {
+  while (client) {
     Serial.println("new client");
     while (!client.available()) delay(1);
 
@@ -1376,9 +1376,10 @@ void pixelflut() {
     Serial.println(line);
     handleCommand(line, client);
     client.flush();
-//    client.stop();
     FastLED.show();
   }
+
+  client.stop();
 }
 
 //////////////////////// IPSUM ////////////////////////
@@ -1399,5 +1400,5 @@ void ipsum() {
 
   FastLED.show();
   ++ipsumOffset;
-  delay(25);
+  delay(30);
 }
